@@ -1,4 +1,4 @@
-# Using [jsonbp](https://github.com/vottini/jsonbp) with Flask
+# Using json with Flask
 
 This sample shows a possible way to use [jsonbp](https://github.com/vottini/jsonbp)
 inside a Flask application. It consists of accepting a JSON with two decimal numbers
@@ -8,8 +8,8 @@ The JSON blueprint is thus:
 
 ```
 object Parameters {
-	operand1: Decimal,
-	operand2: Decimal
+  operand1: Decimal,
+  operand2: Decimal
 }
 ```
 which in this sample project is saved as the file _"blueprints.jbp"_.
@@ -190,8 +190,8 @@ must comply to.
 @app.route("/times", methods=["POST"])
 @parse_json("Parameters")
 def multiplication(payload):
-response = payload['operand1'] * payload['operand2']
-return str(response)
+  response = payload['operand1'] * payload['operand2']
+  return str(response)
 
 ```
 
@@ -209,25 +209,25 @@ this we'll be using the [umapper](https://github.com/vottini/umapper) library:
 import umapper
 
 def deserialize_json(root_type):
-	blueprints = jsonbp.load_file("blueprints.jbp")
-	deserializer = blueprints.choose_root(root_type)
+  blueprints = jsonbp.load_file("blueprints.jbp")
+  deserializer = blueprints.choose_root(root_type)
 
-	def deserializationDecorator(function):
-		@functools.wraps(function)
-		def wrap(*args, **kargs):
-			payload = get_request_payload()
-			success, outcome = deserializer.deserialize(payload)
+  def deserializationDecorator(function):
+    @functools.wraps(function)
+    def wrap(*args, **kargs):
+      payload = get_request_payload()
+      success, outcome = deserializer.deserialize(payload)
 
-			if not success:
-				return make_error(outcome)
+      if not success:
+        return make_error(outcome)
 
-			return function(
-				umapper.convert_to_object(outcome),
-				*args, **kargs)
+      return function(
+        umapper.convert_to_object(outcome),
+        *args, **kargs)
 
-		return wrap
+    return wrap
 
-	return deserializationDecorator
+  return deserializationDecorator
 
 ```
 
@@ -240,8 +240,8 @@ an ordinary python object.
 @app.route("/divide", methods=["POST"])
 @deserialize_json("Parameters")
 def division(payload):
-	response = payload.operand1 / payload.operand2
-	return str(response)
+  response = payload.operand1 / payload.operand2
+  return str(response)
 
 ```
 
