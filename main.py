@@ -2,16 +2,18 @@
 from flask import Flask
 from flask import request
 from flask import jsonify
+
 import jsonbp
 
 app = Flask(__name__)
-operandsBlueprint = jsonbp.load('jsonBlueprints/twoNumbers.jbp')
+blueprints = jsonbp.load_file('blueprints.jbp')
+deserializer = blueprints.choose_root('Parameters')
 
 @app.route("/plus", methods=["POST"])
 def addition():
 	encoding = request.content_encoding or 'utf-8'
 	payload = request.data.decode(encoding)
-	success, outcome = operandsBlueprint.deserialize(payload)
+	success, outcome = deserializer.deserialize(payload)
 
 	if not success:
 		result = jsonify(str(msg))
@@ -23,27 +25,30 @@ def addition():
 
 #------------------------------------------------------------
 
-def getRequestPayload():
+def get_request_payload():
 	encoding = request.content_encoding or 'utf-8'
 	return request.data.decode(encoding)
 
-def makeError(msg):
+def make_error(msg):
 	result = jsonify(str(msg))
 	result.status_code = 400
 	return result
 
-def feedJSON(function):
-	def wrap():
-		payload = getRequestPayload()
-		success, outcome = operandsBlueprint.deserialize(payload)
-		if not success: return makeError(outcome)
+def feed_json(function):
+	def wrapped():
+		payload = get_request_payload()
+		success, outcome = deserializer.deserialize(payload)
+
+		if not success:
+			return make_error(outcome)
+
 		return function(outcome)
 
-	return wrap
+	return wrapped
 
 
 @app.route("/minus", methods=["POST"])
-@feedJSON
+@feed_json
 def subtraction(payload):
 	response = payload['operand1'] - payload['operand2']
 	return str(response)
@@ -52,33 +57,61 @@ def subtraction(payload):
 
 import functools
 
-def deserializeJSON(blueprintFile):
-	blueprint = jsonbp.load(blueprintFile)
+def parse_json(root_type):
+	blueprints = jsonbp.load_file("blueprints.jbp")
+	deserializer = blueprints.choose_root(root_type)
 
-	def deserializationDecorator(function):
+	def deserialization_decorator(function):
 		@functools.wraps(function)
-		def wrap(*args, **kargs):
-			payload = getRequestPayload()
-			success, outcome = blueprint.deserialize(payload)
-			if not success: return makeError(outcome)
+		def wrapped(*args, **kargs):
+			payload = get_request_payload()
+			success, outcome = deserializer.deserialize(payload)
+
+			if not success:
+				return make_error(outcome)
+
 			return function(outcome, *args, **kargs)
 
-		return wrap
+		return wrapped
 
-	return deserializationDecorator
+	return deserialization_decorator
 
 
 @app.route("/times", methods=["POST"])
-@deserializeJSON("jsonBlueprints/twoNumbers.jbp")
+@parse_json("Parameters")
 def multiplication(payload):
 	response = payload['operand1'] * payload['operand2']
 	return str(response)
 
+#------------------------------------------------------------
+
+import umapper
+
+def deserialize_json(root_type):
+	blueprints = jsonbp.load_file("blueprints.jbp")
+	deserializer = blueprints.choose_root(root_type)
+
+	def deserialization_decorator(function):
+		@functools.wraps(function)
+		def wrapped(*args, **kargs):
+			payload = get_request_payload()
+			success, outcome = deserializer.deserialize(payload)
+
+			if not success:
+				return make_error(outcome)
+
+			return function(
+				umapper.convert_to_object(outcome),
+				*args, **kargs)
+
+		return wrapped
+
+	return deserialization_decorator
 
 @app.route("/divide", methods=["POST"])
-@deserializeJSON("jsonBlueprints/twoNumbers.jbp")
+@deserialize_json("Parameters")
 def division(payload):
-	response = payload['operand1'] / payload['operand2']
+	response = payload.operand1 / payload.operand2
 	return str(response)
 
 #------------------------------------------------------------

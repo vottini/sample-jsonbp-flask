@@ -1,0 +1,6 @@
+
+object Parameters {
+	operand1: Decimal,
+	operand2: Decimal
+}
+

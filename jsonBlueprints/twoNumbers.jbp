@@ -1,6 +1,0 @@
-
-root {
-	operand1: decimal,
-	operand2: decimal
-}
-
