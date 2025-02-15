@@ -92,7 +92,7 @@ def addition():
   success, outcome = deserializer.deserialize(payload)
 
   if not success:
-    result = jsonify(str(msg))
+    result = jsonify(str(outcome))
     result.status_code = 400
     return result
 
@@ -153,9 +153,10 @@ def subtraction(payload):
 ### Step #3 - Parameterize the decorator
 
 We can go a step further and parameterize the decorator itself to
-accept a type to be the blueprint root. Moreover, we use _functools.wraps()_
-to restore the wrapped function metadata, and make our _wrap()_
-function well behaved by accepting any kind of parameters and passing
+accept a type to be the blueprint root, because in a non trivial scenario
+our blueprint probably will have many such definitions. Moreover, we use
+_functools.wraps()_ to restore the wrapped function metadata, and make our
+_wrap()_ function well behaved by accepting any kind of parameters and passing
 it along to the wrapped function, such that arguments besides our
 payload can be received.
 

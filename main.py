@@ -16,7 +16,7 @@ def addition():
 	success, outcome = deserializer.deserialize(payload)
 
 	if not success:
-		result = jsonify(str(msg))
+		result = jsonify(str(outcome))
 		result.status_code = 400
 		return result
 
